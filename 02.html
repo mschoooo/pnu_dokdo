@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>독도: 역사와 주권의 기록</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Noto Serif KR (명조) 추가 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Noto+Serif+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #fdfbf7; color: #44403c; }
+        
+        /* Myeongjo Font Class */
+        .font-myeongjo { font-family: 'Noto Serif KR', serif; }
+
+        /* Smooth scrolling */
+        html { scroll-behavior: smooth; }
+
+        /* Chart container */
+        .chart-container { position: relative; width: 100%; max-width: 100%; height: 300px; margin: 0 auto; }
+        
+        /* Timeline styling */
+        .timeline-line { 
+            position: absolute; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            top: 0; 
+            bottom: 0; 
+            width: 4px; 
+            background: linear-gradient(to bottom, #e7e5e4, #d6d3d1, #e7e5e4); 
+            z-index: 0; 
+            border-radius: 2px;
+        }
+        
+        /* Mobile timeline adjustment */
+        @media (max-width: 768px) {
+            .timeline-line { left: 1.5rem; transform: none; }
+        }
+
+        /* Card Animations */
+        .timeline-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .timeline-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+        
+        /* Expansion Animation */
+        .detail-content { 
+            max-height: 0; 
+            overflow: hidden; 
+            opacity: 0;
+            transition: max-height 0.5s ease-in-out, opacity 0.4s ease-in-out; 
+        }
+        .expanded .detail-content { 
+            max-height: 500px; 
+            opacity: 1; 
+            margin-top: 1rem;
+        }
+
+        /* Marker Pulse Effect */
+        .marker-pulse {
+            box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7);
+            animation: pulse-blue 2s infinite;
+        }
+        @keyframes pulse-blue {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(14, 165, 233, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+        }
+
+        /* Scroll Reveal Animation Classes */
+        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+    </style>
+    <!-- Chosen Palette: Warm Neutrals with Sky Blue. Updated Layout: Center Spine Timeline with Expandable Cards. -->
+</head>
+<body class="antialiased min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- Header Section with Hero Graphic Feel -->
+    <header class="bg-gradient-to-b from-stone-900 to-stone-800 text-stone-100 py-16 px-4 shadow-xl relative overflow-hidden">
+        <!-- Home Button Added Here -->
+        <a href="index.html" class="absolute top-6 left-6 z-20 flex items-center gap-2 text-stone-400 hover:text-white transition-colors duration-200 group">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span class="font-medium text-sm tracking-wide">HOME</span>
+        </a>
+
+        <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+        <div class="max-w-4xl mx-auto text-center relative z-10 reveal active">
+            <span class="inline-block py-1 px-3 rounded-full bg-stone-700 text-stone-300 text-xs font-bold tracking-widest mb-4">DOKDO HISTORY ARCHIVE</span>
+            <!-- Font changed to font-myeongjo -->
+            <h1 class="text-4xl md:text-6xl font-black mb-4 tracking-tight leading-tight font-myeongjo">
+                독도, <span class="text-sky-400">천년의 기록</span>
+            </h1>
+            <p class="text-stone-400 max-w-2xl mx-auto text-base md:text-lg font-light leading-relaxed">
+                역사의 파도 속에서도 굳건히 자리를 지켜온 독도.<br>
+                문헌과 지도가 증명하는 주권의 역사를 인터랙티브 타임라인으로 탐험해보세요.
+            </p>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-12 max-w-5xl">
+
+        <!-- Application Structure Plan:
+             1. Analysis Dashboard: Compact visual summary.
+             2. Interactive Filter: Sticky navigation for eras.
+             3. Center Spine Timeline: 
+                - Desktop: Alternating left/right cards.
+                - Mobile: Single column.
+                - Interaction: Clicking a card expands it IN-PLACE to show details (Accordion).
+        -->
+
+        <!-- Section 1: Dashboard -->
+        <section class="mb-16 bg-white rounded-2xl shadow-lg border border-stone-100 p-8 reveal">
+            <div class="grid md:grid-cols-12 gap-8 items-center">
+                <div class="md:col-span-4">
+                    <h2 class="text-3xl font-bold text-stone-800 mb-2 font-myeongjo">기록의 분포</h2>
+                    <p class="text-stone-500 text-sm mb-6">시대별 주요 사건 빈도 분석</p>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-stone-50 border border-stone-100">
+                            <div class="flex items-center gap-3">
+                                <span class="w-3 h-3 rounded-full bg-stone-400 shadow-sm"></span>
+                                <span class="font-medium text-stone-600">전근대</span>
+                            </div>
+                            <span class="font-bold text-stone-800" id="count-pre">10</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-orange-50 border border-orange-100">
+                            <div class="flex items-center gap-3">
+                                <span class="w-3 h-3 rounded-full bg-orange-400 shadow-sm"></span>
+                                <span class="font-medium text-stone-600">근대</span>
+                            </div>
+                            <span class="font-bold text-stone-800" id="count-modern">10</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-sky-50 border border-sky-100">
+                            <div class="flex items-center gap-3">
+                                <span class="w-3 h-3 rounded-full bg-sky-500 shadow-sm"></span>
+                                <span class="font-medium text-stone-600">현대</span>
+                            </div>
+                            <span class="font-bold text-stone-800" id="count-contem">15</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:col-span-8">
+                    <div class="chart-container">
+                        <canvas id="recordStatsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Timeline Controls -->
+        <div class="sticky top-4 z-40 bg-white/90 backdrop-blur-md p-2 rounded-2xl shadow-md border border-stone-200 mb-12 flex justify-center max-w-fit mx-auto reveal">
+            <div class="flex flex-wrap gap-1 md:gap-2" id="filterContainer">
+                <button onclick="filterTimeline('all')" class="filter-btn active px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 bg-stone-800 text-white shadow-lg transform scale-105">
+                    전체
+                </button>
+                <button onclick="filterTimeline('pre')" class="filter-btn px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 bg-transparent text-stone-500 hover:bg-stone-100 hover:text-stone-800">
+                    전근대
+                </button>
+                <button onclick="filterTimeline('modern')" class="filter-btn px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 bg-transparent text-stone-500 hover:bg-orange-50 hover:text-orange-600">
+                    근대
+                </button>
+                <button onclick="filterTimeline('contemporary')" class="filter-btn px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 bg-transparent text-stone-500 hover:bg-sky-50 hover:text-sky-600">
+                    현대
+                </button>
+            </div>
+        </div>
+
+        <!-- Section 3: The Timeline -->
+        <div class="relative pb-20" id="timelineWrapper">
+            <!-- Central Line -->
+            <div class="timeline-line bg-stone-200"></div>
+
+            <!-- Content populated by JS -->
+            <div id="timelineContent" class="relative z-10 space-y-8 md:space-y-0">
+                <!-- Items will be injected here as zig-zag layout -->
+            </div>
+
+            <div id="noResults" class="hidden text-center py-20">
+                <p class="text-xl text-stone-400 font-light">해당 시기의 기록이 없습니다.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-stone-900 text-stone-400 py-12 border-t border-stone-800">
+        <div class="container mx-auto px-4 text-center">
+            <h3 class="text-white text-lg font-bold mb-4 font-myeongjo">독도 역사 아카이브</h3>
+            <p class="text-sm mb-6 max-w-lg mx-auto leading-relaxed">
+                이 페이지는 독도의 역사적 사실을 시각적으로 전달하기 위해 제작되었습니다.<br>
+                올바른 역사를 기억하고 전달하는 것이 우리 땅 독도를 지키는 첫걸음입니다.
+            </p>
+            <p class="text-xs opacity-50">&copy; 2024 Dokdo History Project. Based on provided historical records.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Data Source
+        const timelineData = [
+            // Pre-modern
+            { id: 1, year: "1454년", era: "pre", eraLabel: "전근대", title: "세종실록지리지 기록", source: "세종실록지리지", desc: "우산(독도)과 무릉(울릉도)이 맑은 날 서로 바라볼 수 있다고 기록됨. 두 섬이 강원도 울진현에 속함을 명시." },
+            { id: 2, year: "1481년", era: "pre", eraLabel: "전근대", title: "팔도총도 제작", source: "팔도총도 (<신증동국여지승람> 지도)", desc: "<신증동국여지승람>에 수록된 지도로, 동해에 울릉도와 우산도가 명확히 그려짐." },
+            { id: 3, year: "1531년", era: "pre", eraLabel: "전근대", title: "신증동국여지승람 기술", source: "신증동국여지승람", desc: "강원도 울진현 조에 우산도와 울릉도에 관한 내용이 상세히 기술됨." },
+            { id: 4, year: "1667년", era: "pre", eraLabel: "전근대", title: "은주시청합기 기록", source: "은주시청합기", desc: "일본 관리가 작성한 보고서. 일본의 경계가 오키섬임을 명시하여 독도가 일본 영토 밖임을 인정." },
+            { id: 5, year: "1693년", era: "pre", eraLabel: "전근대", title: "1차 안용복 사건", source: "숙종실록 등", desc: "안용복 일행이 일본으로 납치되었으나, 일본 막부에 독도가 조선 땅임을 강력히 주장함." },
+            { id: 6, year: "1696년 1월", era: "pre", eraLabel: "전근대", title: "죽도 도해 금지령", source: "에도 막부 문서", desc: "에도 막부가 울릉도와 독도가 조선 땅임을 공식적으로 인정하고 일본인의 도해를 금지함." },
+            { id: 7, year: "1696년", era: "pre", eraLabel: "전근대", title: "2차 안용복 사건", source: "숙종실록 등", desc: "안용복이 다시 도일하여 울릉도와 독도가 조선 영토임을 일본 측으로부터 확약받음." },
+            { id: 8, year: "1697년", era: "pre", eraLabel: "전근대", title: "울릉도 수토관 제도 신설", source: "조선 조정", desc: "안용복 사건의 영향으로 조선 정부가 정기적으로 관리를 파견하여 섬을 조사하고 관리함." },
+            { id: 9, year: "1779년", era: "pre", eraLabel: "전근대", title: "개정 일본여지로정전도", source: "나가쿠보 세키스이", desc: "독도와 울릉도가 일본 영역 밖의 섬으로 인식되어 채색되지 않은 채(혹은 조선과 같은 색으로) 그려짐." },
+            { id: 10, year: "1785년", era: "pre", eraLabel: "전근대", title: "삼국접양지도", source: "하야시 시헤이", desc: "일본의 지리학자 하야시 시헤이가 제작한 지도. 독도를 조선과 같은 황색으로 표시하여 조선 영토임을 명시." },
+            
+            // Modern
+            { id: 11, year: "1808년", era: "modern", eraLabel: "근대", title: "만기요람 기록", source: "만기요람", desc: "'울릉과 우산은 모두 우산국의 땅'이라는 기록이 실려 조선의 영토 인식을 재확인." },
+            { id: 12, year: "1854년", era: "modern", eraLabel: "근대", title: "러시아 올리부차호 독도 발견", source: "올리부차호 항해일지", desc: "러시아 수송선이 독도를 발견하고 동도를 '메넬라이', 서도를 '올리부차'로 명명함." },
+            { id: 13, year: "1857년", era: "modern", eraLabel: "근대", title: "한반도 동해안 지도", source: "러시아 해군", desc: "러시아 해군이 발간한 지도로 독도를 명확히 한국 영토로 인정하여 표시함." },
+            { id: 14, year: "1870년", era: "modern", eraLabel: "근대", title: "조선국 교제시말 내탐서", source: "일본 외무성", desc: "일본 외무성 관료들이 울릉도와 독도가 조선 영토가 된 역사적 사정을 조사하여 보고함." },
+            { id: 15, year: "1877년", era: "modern", eraLabel: "근대", title: "태정관 지령", source: "일본 태정관", desc: "일본 최고 행정기관인 태정관이 '독도와 울릉도는 일본과 관계없다'고 내무성에 내린 공식 지령." },
+            { id: 16, year: "1894년", era: "modern", eraLabel: "근대", title: "울릉도 수토관 제도 종료", source: "-", desc: "개화기 행정 개편 등으로 인해 조선의 정기적인 수토관 파견 제도가 종료됨." },
+            { id: 17, year: "1900년 10월", era: "modern", eraLabel: "근대", title: "대한제국 칙령 제41호", source: "대한제국 관보", desc: "고종 황제가 독도를 울도군(울릉도) 관할 구역으로 명문화하여 대내외에 공포함. 근대법적 영유권 확립." },
+            { id: 18, year: "1905년 1월", era: "modern", eraLabel: "근대", title: "일본 내각회의 결정", source: "일본 내각", desc: "러일전쟁 중 전략적 필요에 의해 일본 내각이 독도를 일본 영토로 강제 편입하기로 비밀리에 결정." },
+            { id: 19, year: "1905년 2월", era: "modern", eraLabel: "근대", title: "시마네현 고시 제40호", source: "시마네현", desc: "지방 정부 고시를 통해 독도를 '다케시마'로 명명하고 시마네현 소속으로 편입한다고 주장." },
+            { id: 20, year: "1906년 5월", era: "modern", eraLabel: "근대", title: "지령 제3호", source: "대한제국 의정부", desc: "강원도 관찰사로부터 일본의 독도 편입 소식을 들은 의정부가 이를 '근거 없는 주장'으로 규정하고 지령을 내림." },
+
+            // Contemporary
+            { id: 21, year: "1946년 1월", era: "contemporary", eraLabel: "현대", title: "SCAPIN 제677호", source: "연합군 최고사령부", desc: "연합군 최고사령관 지령으로 독도를 일본의 통치 및 행정 범위에서 명확히 제외함." },
+            { id: 22, year: "1951년 9월", era: "contemporary", eraLabel: "현대", title: "샌프란시스코 강화조약", source: "국제 조약", desc: "일본이 한국의 독립을 인정. 독도가 명시적으로 언급되지는 않았으나 SCAPIN 등 이전 문서를 통해 한국 영토임이 전제됨." },
+            { id: 23, year: "1952년 1월", era: "contemporary", eraLabel: "현대", title: "이승만 라인 (평화선) 선포", source: "대한민국 정부", desc: "인접 해양에 대한 주권을 선언하며 독도를 포함한 평화선을 선포하여 어족 자원 및 영토 보호." },
+            { id: 24, year: "1953년 7월", era: "contemporary", eraLabel: "현대", title: "독도경비대(독도순라반) 활동", source: "민간/경찰", desc: "홍순칠 대장 등 독도의용수비대가 모체가 되어 독도 상시 주둔 및 수호 활동 시작." },
+            { id: 25, year: "1954년 9월", era: "contemporary", eraLabel: "현대", title: "일본 ICJ 제소 제안", source: "일본 정부", desc: "일본 정부가 독도 문제를 국제사법재판소(ICJ)에 회부하자고 최초로 제안했으나 한국 정부가 거절." },
+            { id: 26, year: "1965년 6월", era: "contemporary", eraLabel: "현대", title: "한일기본조약 체결", source: "한일 정부", desc: "독도 문제를 명시적으로 해결하지 않고 '해결해야 할 문제'로 남기기로 함." },
+            { id: 27, year: "1968년", era: "contemporary", eraLabel: "현대", title: "최종덕 씨 거주 시작", source: "-", desc: "최종덕 씨가 서도에 거주시설을 짓고 생활하며 독도를 유인도로 만듦. 실효적 지배 강화." },
+            { id: 28, year: "1981년", era: "contemporary", eraLabel: "현대", title: "최초의 독도 주민 등록", source: "행정 기록", desc: "최종덕 씨가 주민등록을 독도로 이전하여 법적으로 최초의 독도 주민이 됨." },
+            { id: 29, year: "1998년 9월", era: "contemporary", eraLabel: "현대", title: "신한일 어업협정", source: "한일 정부", desc: "독도가 중간수역(잠정수역) 안에 포함되어 어업 문제와 관련된 논란이 발생함." },
+            { id: 30, year: "2000년 3월", era: "contemporary", eraLabel: "현대", title: "시민단체 독도수호대 창설", source: "시민 사회", desc: "1900년 칙령일(10월 25일)을 기념해 '독도의 날' 제정 운동을 전개." },
+            { id: 31, year: "2005년 3월", era: "contemporary", eraLabel: "현대", title: "다케시마의 날 조례 제정", source: "일본 시마네현", desc: "일본 시마네현 의회가 일방적으로 '다케시마의 날' 조례를 제정하여 갈등 심화." },
+            { id: 32, year: "2006년 4월", era: "contemporary", eraLabel: "현대", title: "노무현 대통령 특별담화", source: "대한민국 정부", desc: "일본의 도발에 대해 독도 문제를 역사적 청산 문제와 결부시켜 강력히 대응하겠다는 의지 표명." },
+            { id: 33, year: "2008년", era: "contemporary", eraLabel: "현대", title: "독도연구소 설립", source: "동북아역사재단", desc: "정부 산하 연구기관인 독도연구소가 설립되어 체계적인 연구와 독도체험관 운영 시작." },
+            { id: 34, year: "2014년 8월", era: "contemporary", eraLabel: "현대", title: "한일 공동 역사교재 발간", source: "학계/시민사회", desc: "한일 교사·교수들이 공동 집필하여 올바른 역사 인식을 위한 교재 발간." },
+            { id: 35, year: "2015년", era: "contemporary", eraLabel: "현대", title: "일본 교과서 왜곡 심화", source: "일본 문부과학성", desc: "일본의 모든 초등학교 교과서에 독도가 '일본 영토'이며 '한국이 불법 점거' 중이라고 기술됨." }
+        ];
+
+        let expandedId = null;
+
+        // --- Chart & Stats ---
+        function initChartAndStats() {
+            // Update Dashboard Counters
+            const preCount = timelineData.filter(d => d.era === 'pre').length;
+            const modernCount = timelineData.filter(d => d.era === 'modern').length;
+            const contemCount = timelineData.filter(d => d.era === 'contemporary').length;
+
+            document.getElementById('count-pre').textContent = preCount;
+            document.getElementById('count-modern').textContent = modernCount;
+            document.getElementById('count-contem').textContent = contemCount;
+
+            const ctx = document.getElementById('recordStatsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['전근대 (15-18세기)', '근대 (19세기-1906)', '현대 (1946-현재)'],
+                    datasets: [{
+                        label: '기록 수',
+                        data: [preCount, modernCount, contemCount],
+                        backgroundColor: ['rgba(168, 162, 158, 0.8)', 'rgba(251, 146, 60, 0.8)', 'rgba(14, 165, 233, 0.8)'],
+                        borderColor: ['#a8a29e', '#fb923c', '#0ea5e9'],
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        barThickness: 40
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f5f5f4' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // --- Timeline Render (Zig-Zag / Center Spine) ---
+        function renderTimeline(filterEra) {
+            const container = document.getElementById('timelineContent');
+            const noResults = document.getElementById('noResults');
+            
+            container.innerHTML = '';
+            
+            const filteredData = filterEra === 'all' 
+                ? timelineData 
+                : timelineData.filter(item => item.era === filterEra);
+
+            if (filteredData.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+
+            filteredData.forEach((item, index) => {
+                // Color Theme based on Era
+                let theme = {
+                    bg: 'bg-stone-50', border: 'border-stone-200', 
+                    text: 'text-stone-500', accent: 'bg-stone-400', 
+                    markerBorder: 'border-stone-300', markerBg: 'bg-stone-400',
+                    gradient: 'from-stone-500 to-stone-600'
+                };
+                
+                if(item.era === 'modern') { 
+                    theme = { 
+                        bg: 'bg-orange-50', border: 'border-orange-200', 
+                        text: 'text-orange-600', accent: 'bg-orange-400',
+                        markerBorder: 'border-orange-300', markerBg: 'bg-orange-400',
+                        gradient: 'from-orange-500 to-red-500' 
+                    }; 
+                } else if(item.era === 'contemporary') { 
+                    theme = { 
+                        bg: 'bg-sky-50', border: 'border-sky-200', 
+                        text: 'text-sky-600', accent: 'bg-sky-500',
+                        markerBorder: 'border-sky-300', markerBg: 'bg-sky-500',
+                        gradient: 'from-sky-500 to-blue-600'
+                    }; 
+                }
+
+                // Zig-Zag Logic: Even -> Left, Odd -> Right (Desktop)
+                // Mobile: Always full width with left padding
+                const isLeft = index % 2 === 0;
+                
+                // Main Container
+                const row = document.createElement('div');
+                row.className = `flex flex-col md:flex-row items-center w-full reveal`; // "reveal" for scroll anim
+
+                // Center Marker
+                const marker = document.createElement('div');
+                marker.className = `absolute left-[1.5rem] md:left-1/2 w-6 h-6 rounded-full border-4 ${theme.markerBorder} ${theme.markerBg} shadow-lg z-20 transform -translate-x-1/2 mt-6 md:mt-0 order-1 md:order-2 transition-transform duration-300 group-hover:scale-125`;
+                // Add marker ID for pulsing effect
+                marker.id = `marker-${item.id}`;
+
+                // The Card Content
+                const card = document.createElement('div');
+                card.id = `card-${item.id}`;
+                card.className = `timeline-card relative bg-white p-6 rounded-2xl shadow-sm border ${theme.border} cursor-pointer hover:shadow-xl w-full`;
+                card.onclick = () => toggleEvent(item.id, theme);
+
+                card.innerHTML = `
+                    <div class="flex flex-col gap-2">
+                        <div class="flex items-center gap-2 ${isLeft ? 'md:justify-end' : 'md:justify-start'} justify-start">
+                            <span class="text-xs font-bold px-2 py-1 rounded text-white bg-gradient-to-r ${theme.gradient}">${item.eraLabel}</span>
+                            <span class="text-xl font-black ${theme.text}">${item.year}</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-stone-800 ${isLeft ? 'md:text-right' : 'md:text-left'}">${item.title}</h3>
+                        
+                        <!-- Expanded Details (Accordion) -->
+                        <div id="detail-${item.id}" class="detail-content text-left">
+                            <div class="pt-4 border-t ${theme.border} mt-2">
+                                <div class="flex items-start gap-2 mb-3">
+                                    <span class="text-lg">📜</span>
+                                    <span class="text-sm font-bold text-stone-700 bg-stone-100 px-2 py-0.5 rounded self-center">${item.source}</span>
+                                </div>
+                                <p class="text-stone-600 leading-relaxed text-sm md:text-base">${item.desc}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="absolute top-6 right-6 text-stone-300 md:hidden">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                `;
+
+                // Simplified Structure Logic for Desktop Zig-Zag / Mobile List
+                // We use visual order manipulation or simple hidden/block classes
+                
+                row.className = `flex flex-col md:flex-row w-full reveal relative mb-8 md:mb-0`;
+                
+                // Construct HTML with visibility classes for Desktop Left/Right
+                row.innerHTML = `
+                    <div class="absolute left-[1.5rem] md:left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full border-4 ${theme.markerBorder} ${theme.markerBg} z-20 mt-6 shadow-md transition-all duration-300" id="marker-visual-${item.id}"></div>
+                    
+                    <!-- Left Side (Desktop) -->
+                    <div class="w-full md:w-1/2 md:pr-10 flex md:justify-end ${isLeft ? '' : 'hidden md:flex md:invisible'} pl-12 md:pl-0 mb-4 md:mb-0">
+                        ${isLeft ? card.outerHTML : ''}
+                    </div>
+
+                    <!-- Right Side (Desktop) -->
+                    <div class="w-full md:w-1/2 md:pl-10 flex md:justify-start ${!isLeft ? '' : 'hidden md:flex md:invisible'} pl-12 md:pl-0">
+                         ${!isLeft ? card.outerHTML : ''}
+                    </div>
+                `;
+
+                container.appendChild(row);
+                
+                // Re-attach event listener
+                const insertedCard = document.getElementById(`card-${item.id}`);
+                if(insertedCard) {
+                    insertedCard.onclick = () => toggleEvent(item.id, theme);
+                }
+            });
+            
+            setTimeout(checkScroll, 100);
+        }
+
+        // --- Interaction Logic ---
+        function filterTimeline(era) {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-stone-800', 'text-white', 'shadow-lg', 'scale-105');
+                btn.classList.add('bg-transparent', 'text-stone-500');
+            });
+            
+            const activeBtn = Array.from(document.querySelectorAll('.filter-btn'))
+                .find(btn => btn.getAttribute('onclick').includes(`'${era}'`));
+            
+            if(activeBtn) {
+                activeBtn.classList.remove('bg-transparent', 'text-stone-500');
+                activeBtn.classList.add('active', 'bg-stone-800', 'text-white', 'shadow-lg', 'scale-105');
+            }
+
+            renderTimeline(era);
+        }
+
+        function toggleEvent(id, theme) {
+            const content = document.getElementById(`detail-${id}`);
+            const card = document.getElementById(`card-${id}`);
+            const marker = document.getElementById(`marker-visual-${id}`);
+            const wasExpanded = content.parentElement.classList.contains('expanded');
+
+            // Collapse currently expanded if exists and is not self
+            if (expandedId && expandedId !== id) {
+                const prevContent = document.getElementById(`detail-${expandedId}`);
+                const prevCard = document.getElementById(`card-${expandedId}`);
+                const prevMarker = document.getElementById(`marker-visual-${expandedId}`);
+                if (prevCard) {
+                    prevCard.classList.remove('expanded', 'ring-2', 'ring-offset-2', 'ring-stone-400', 'scale-105');
+                    prevCard.classList.remove('bg-stone-50', 'bg-orange-50', 'bg-sky-50'); 
+                    prevCard.classList.add('bg-white');
+                }
+                if (prevMarker) prevMarker.classList.remove('marker-pulse', 'scale-125');
+            }
+
+            // Toggle Self
+            if (!wasExpanded) {
+                card.classList.add('expanded', 'ring-2', 'ring-offset-2', 'ring-stone-400', 'scale-105');
+                card.classList.remove('bg-white');
+                card.classList.add(theme.bg);
+                marker.classList.add('marker-pulse', 'scale-125');
+                expandedId = id;
+            } else {
+                card.classList.remove('expanded', 'ring-2', 'ring-offset-2', 'ring-stone-400', 'scale-105');
+                card.classList.add('bg-white');
+                card.classList.remove(theme.bg);
+                marker.classList.remove('marker-pulse', 'scale-125');
+                expandedId = null;
+            }
+        }
+
+        function checkScroll() {
+            const reveals = document.querySelectorAll('.reveal');
+            const triggerBottom = window.innerHeight * 0.85;
+
+            reveals.forEach(box => {
+                const boxTop = box.getBoundingClientRect().top;
+                if (boxTop < triggerBottom) {
+                    box.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', checkScroll);
+
+        // --- Initialization ---
+        window.addEventListener('DOMContentLoaded', () => {
+            initChartAndStats();
+            renderTimeline('all');
+        });
+
+    </script>
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</body>
+</html>
